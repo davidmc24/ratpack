@@ -30,9 +30,11 @@ import java.util.List;
 
 // TODO: document
 public class OpenIdRpModule extends AbstractModule implements HandlerDecoratingModule {
-  private static final String DEFAULT_VERIFICATION_PATH = "ratpack.openid/verification";
+  private static final String DEFAULT_FAILURE_PATH = "error";
+  private static final String DEFAULT_VERIFICATION_PATH = "openid/verification";
 
   private final ProviderSelectionStrategy providerSelectionStrategy;
+  private final String failurePath;
   private final String verificationPath;
 
   public OpenIdRpModule() {
@@ -44,16 +46,22 @@ public class OpenIdRpModule extends AbstractModule implements HandlerDecoratingM
   }
 
   public OpenIdRpModule(ProviderSelectionStrategy providerSelectionStrategy) {
-    this(providerSelectionStrategy, DEFAULT_VERIFICATION_PATH);
+    this(providerSelectionStrategy, DEFAULT_FAILURE_PATH);
   }
 
-  public OpenIdRpModule(ProviderSelectionStrategy providerSelectionStrategy, String verificationPath) {
+  public OpenIdRpModule(ProviderSelectionStrategy providerSelectionStrategy, String failurePath) {
+    this(providerSelectionStrategy, failurePath, DEFAULT_VERIFICATION_PATH);
+  }
+
+  public OpenIdRpModule(ProviderSelectionStrategy providerSelectionStrategy, String failurePath, String verificationPath) {
     this.providerSelectionStrategy = providerSelectionStrategy;
+    this.failurePath = failurePath;
     this.verificationPath = verificationPath;
   }
 
   @Override
   protected void configure() {
+    bindConstant().annotatedWith(FailurePath.class).to(failurePath);
     bindConstant().annotatedWith(VerificationPath.class).to(verificationPath);
     Multibinder.newSetBinder(binder(), AuthenticationRequirement.class);
     Multibinder.newSetBinder(binder(), Attribute.class, Required.class);

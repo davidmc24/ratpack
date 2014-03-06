@@ -20,6 +20,9 @@ import org.openid4java.message.MessageException;
 import org.openid4java.message.ax.FetchRequest;
 import ratpack.openid.Attribute;
 
+/**
+ * Attributes supported by Yahoo's OpenID provider.
+ */
 public enum YahooAttribute implements Attribute {
   email("email", "http://axschema.org/contact/email"),
   fullname("fullname", "http://axschema.org/namePerson");

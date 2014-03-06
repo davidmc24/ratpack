@@ -20,6 +20,9 @@ import org.openid4java.message.MessageException;
 import org.openid4java.message.ax.FetchRequest;
 import ratpack.openid.Attribute;
 
+/**
+ * Attributes supported by Google's OpenID provider.
+ */
 public enum GoogleAttribute implements Attribute {
   country("country", "http://axschema.org/contact/country/home"),
   email("email", "http://axschema.org/contact/email"),

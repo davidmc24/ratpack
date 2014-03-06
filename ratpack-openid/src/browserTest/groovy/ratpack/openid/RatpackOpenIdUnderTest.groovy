@@ -26,12 +26,11 @@ import ratpack.session.store.MapSessionsModule
 import ratpack.test.embed.BaseDirBuilder
 
 class RatpackOpenIdUnderTest extends ClosureBackedEmbeddedApplication {
-  RatpackOpenIdUnderTest(BaseDirBuilder baseDirBuilder) {
+  RatpackOpenIdUnderTest(int providerPort, int consumerPort, BaseDirBuilder baseDirBuilder) {
     super(baseDirBuilder)
-    def assignedPort = new ServerSocket(0).localPort
     launchConfig {
-      port(assignedPort)
-      publicAddress(new URI("http://localhost:${assignedPort}"))
+      port(consumerPort)
+      publicAddress(new URI("http://localhost:${consumerPort}"))
     }
     modules {
       register new SessionModule()
@@ -40,7 +39,7 @@ class RatpackOpenIdUnderTest extends ClosureBackedEmbeddedApplication {
       register new AbstractModule() {
         @Override
         protected void configure() {
-          bind(ProviderSelectionStrategy).toInstance(new SingleProviderSelectionStrategy(KnownProviderDiscoveryUrls.GOOGLE))
+          bind(ProviderSelectionStrategy).toInstance(new SingleProviderSelectionStrategy("http://localhost:${providerPort}/discovery"))
           Multibinder.newSetBinder(binder(), AuthenticationRequirement).addBinding().toInstance(AuthenticationRequirement.of("/auth"))
           def requiredOpenidAttributeBinder = Multibinder.newSetBinder(binder(), Attribute, Required)
           GoogleAttribute.values().each {requiredOpenidAttributeBinder.addBinding().toInstance(it)}
@@ -53,6 +52,9 @@ class RatpackOpenIdUnderTest extends ClosureBackedEmbeddedApplication {
       }
       get("auth") {
         response.send "auth:${SecurityUtils.getUser(context)?.attributes?.get(GoogleAttribute.email.name())}"
+      }
+      get("error") {
+        response.send "An error was encountered."
       }
     }
   }

@@ -17,12 +17,10 @@
 package ratpack.openid
 
 import geb.spock.GebReportingSpec
-import org.junit.Assume
 import org.junit.ClassRule
 import org.junit.rules.TemporaryFolder
 import ratpack.openid.pages.AuthPage
-import ratpack.openid.pages.GoogleAuthorizationPage
-import ratpack.openid.pages.GoogleLoginPage
+import ratpack.openid.pages.ErrorPage
 import ratpack.openid.pages.NoAuthPage
 import ratpack.test.embed.BaseDirBuilder
 import ratpack.test.embed.PathBaseDirBuilder
@@ -36,6 +34,8 @@ import spock.lang.Shared
  * "GEB_SAUCE_LABS_ACCESS_PASSWORD" environment variables and run the "allSauceTests" target.
  */
 class OpenIdRpSpec extends GebReportingSpec {
+  private static final String EMAIL = "fake@example.com"
+
   @Shared
   @ClassRule
   TemporaryFolder temporaryFolder
@@ -48,16 +48,25 @@ class OpenIdRpSpec extends GebReportingSpec {
   RatpackOpenIdUnderTest aut
 
   @Shared
-  String email
-  @Shared
-  String password
+  @AutoCleanup
+  EmbeddedProvider provider
+
+  static int allocatePort() {
+    def socket = new ServerSocket(0)
+    try {
+      return socket.localPort
+    } finally {
+      socket.close()
+    }
+  }
 
   def setupSpec() {
-    email = System.getenv("OPENID_GOOGLE_EMAIL")
-    password = System.getenv("OPENID_GOOGLE_PASSWORD")
-    Assume.assumeTrue(email && password)
+    def providerPort = allocatePort()
+    def consumerPort = allocatePort()
+    provider = new EmbeddedProvider()
+    provider.open(providerPort)
     baseDir = new PathBaseDirBuilder(temporaryFolder.newFolder("app"))
-    aut = new RatpackOpenIdUnderTest(baseDir)
+    aut = new RatpackOpenIdUnderTest(providerPort, consumerPort, baseDir)
   }
 
   def setup() {
@@ -84,28 +93,34 @@ class OpenIdRpSpec extends GebReportingSpec {
     body.text() == "noauth:null"
   }
 
-  def "test google auth"() {
+  def "test successful auth"() {
+    setup:
+    provider.addResult(true, EMAIL)
+
     when:
     go AuthPage.url
 
     then:
-    at GoogleLoginPage
-
-    when:
-    login(email, password)
-    if (at(GoogleAuthorizationPage)) {
-      accept()
-    }
-
-    then:
     at AuthPage
-    body.text() == "auth:${email}"
+    body.text() == "auth:${EMAIL}"
 
     when:
     to NoAuthPage
 
     then:
     at NoAuthPage
-    body.text() == "noauth:${email}"
+    body.text() == "noauth:${EMAIL}"
+  }
+
+  def "test failed auth"() {
+    setup:
+    provider.addResult(false, EMAIL)
+
+    when:
+    go AuthPage.url
+
+    then:
+    at ErrorPage
+    body.text() == "An error was encountered."
   }
 }
