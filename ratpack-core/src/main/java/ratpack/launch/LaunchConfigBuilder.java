@@ -78,10 +78,10 @@ public class LaunchConfigBuilder {
   private ImmutableSet.Builder<String> compressionMimeTypeWhiteList;
   private ImmutableSet.Builder<String> compressionMimeTypeBlackList;
 
-  private LaunchConfigBuilder() {
+  protected LaunchConfigBuilder() {
   }
 
-  private LaunchConfigBuilder(Path baseDir) {
+  protected LaunchConfigBuilder(Path baseDir) {
     this.baseDir = new DefaultFileSystemBinding(baseDir);
   }
 
